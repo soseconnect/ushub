@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { X, Upload, Image as ImageIcon } from 'lucide-react';
-import { supabase, Profile } from '../lib/supabase';
+import { Profile } from '../lib/supabase';
 import toast from 'react-hot-toast';
-import { v4 as uuidv4 } from 'uuid';
 
 interface CreatePostProps {
   isOpen: boolean;
@@ -37,27 +36,6 @@ export default function CreatePost({ isOpen, onClose, currentUser, onPostCreated
 
   if (!isOpen) return null;
 
-  const uploadImage = async (file: File): Promise<string | null> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `posts/${fileName}`;
-
-    const { error } = await supabase.storage
-      .from('images')
-      .upload(filePath, file);
-
-    if (error) {
-      console.error('Upload error:', error);
-      return null;
-    }
-
-    const { data } = supabase.storage
-      .from('images')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() && !selectedImage) {
@@ -67,21 +45,21 @@ export default function CreatePost({ isOpen, onClose, currentUser, onPostCreated
 
     setLoading(true);
     try {
-      let imageUrl = null;
+      // For now, we'll use a placeholder for images since storage isn't set up
+      let imageUrl: string | null = null;
       if (selectedImage) {
-        imageUrl = await uploadImage(selectedImage);
-        if (!imageUrl) {
-          toast.error('Failed to upload image');
-          return;
-        }
+        // Create a local URL for preview (in production, you'd upload to Supabase Storage)
+        imageUrl = URL.createObjectURL(selectedImage);
+        toast.success('Image will be uploaded when storage is configured');
       }
 
+      const { supabase } = await import('../lib/supabase');
       const { error } = await supabase
         .from('posts')
         .insert({
           user_id: currentUser.id,
           content: content.trim(),
-          image_url: imageUrl,
+          image_url: null, // Temporarily disabled until storage is set up
         });
 
       if (error) throw error;

@@ -30,24 +30,32 @@ export default function OnlineUsers({ currentUser, onUserClick }: OnlineUsersPro
   }, [currentUser.id]);
 
   const updateUserSession = async () => {
-    await supabase.rpc('update_user_session', {
-      user_uuid: currentUser.id
-    });
+    try {
+      await supabase.rpc('update_user_session', {
+        user_uuid: currentUser.id
+      });
+    } catch (error) {
+      console.error('Error updating user session:', error);
+    }
   };
 
   const fetchOnlineUsers = async () => {
-    const { data } = await supabase
-      .from('user_sessions')
-      .select(`
-        *,
-        profiles:user_id (*)
-      `)
-      .neq('user_id', currentUser.id)
-      .eq('is_online', true)
-      .gte('last_activity', new Date(Date.now() - 5 * 60 * 1000).toISOString()); // Active in last 5 minutes
+    try {
+      const { data } = await supabase
+        .from('user_sessions')
+        .select(`
+          *,
+          profiles:user_id (*)
+        `)
+        .neq('user_id', currentUser.id)
+        .eq('is_online', true)
+        .gte('last_activity', new Date(Date.now() - 5 * 60 * 1000).toISOString()); // Active in last 5 minutes
 
-    if (data) {
-      setOnlineUsers(data);
+      if (data) {
+        setOnlineUsers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching online users:', error);
     }
   };
 
