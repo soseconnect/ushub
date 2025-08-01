@@ -9,6 +9,8 @@ import LoadingSpinner from './components/LoadingSpinner';
 function App() {
   const { user, profile, loading } = useAuth();
 
+  console.log('App state:', { user: !!user, profile: !!profile, loading });
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -23,11 +25,11 @@ function App() {
           />
           <Route 
             path="/" 
-            element={user && profile ? <HomePage /> : <Navigate to="/auth" replace />} 
+            element={user ? <HomePage /> : <Navigate to="/auth" replace />} 
           />
           <Route 
             path="*" 
-            element={<Navigate to={user && profile ? "/" : "/auth"} replace />} 
+            element={<Navigate to={user ? "/" : "/auth"} replace />} 
           />
         </Routes>
         

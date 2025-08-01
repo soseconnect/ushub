@@ -18,11 +18,11 @@ export default function HomePage() {
   const [showChat, setShowChat] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Profile | undefined>();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (profile) {
-      fetchPosts();
-      fetchUsers();
+      initializeData();
     }
   }, [profile]);
 
@@ -45,6 +45,20 @@ export default function HomePage() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  const initializeData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchPosts(),
+        fetchUsers()
+      ]);
+    } catch (error) {
+      console.error('Error initializing data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchPosts = async () => {
     try {
@@ -84,7 +98,14 @@ export default function HomePage() {
   };
 
   if (!profile) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Heart className="w-16 h-16 text-purple-600 mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-600">Loading your profile...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -186,7 +207,12 @@ export default function HomePage() {
 
         {/* Posts */}
         <div className="space-y-8">
-          {posts.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-500">Loading posts...</p>
+            </div>
+          ) : posts.length === 0 ? (
             <div className="text-center py-12">
               <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-600 mb-2">
