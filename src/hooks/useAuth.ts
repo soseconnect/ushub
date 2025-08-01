@@ -48,10 +48,10 @@ export function useAuth() {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
-      if (data) setProfile(data);
+      setProfile(data || null);
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast.error('Failed to load profile');
