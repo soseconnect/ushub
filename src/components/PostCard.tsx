@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Send, MoreHorizontal } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { supabase, Post, Comment, Profile } from '../lib/supabase';
+import { supabase, Post, Comment, Profile, isDemoMode } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 interface PostCardProps {
   post: Post;
   currentUser: Profile;
-  onDelete?: (postId: string) => void;
+  onPostUpdate?: () => void;
 }
 
-export default function PostCard({ post, currentUser, onDelete }: PostCardProps) {
+export default function PostCard({ post, currentUser, onPostUpdate }: PostCardProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [showComments, setShowComments] = useState(false);
@@ -19,9 +19,47 @@ export default function PostCard({ post, currentUser, onDelete }: PostCardProps)
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchComments();
-    checkLikeStatus();
+    if (!isDemoMode) {
+      fetchComments();
+      checkLikeStatus();
+      subscribeToUpdates();
+    }
   }, [post.id]);
+
+  const subscribeToUpdates = () => {
+    if (isDemoMode) return;
+
+    // Subscribe to comments
+    const commentsSubscription = supabase
+      .channel(`post-comments-${post.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'comments',
+        filter: `post_id=eq.${post.id}`
+      }, () => {
+        fetchComments();
+      })
+      .subscribe();
+
+    // Subscribe to likes
+    const likesSubscription = supabase
+      .channel(`post-likes-${post.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'likes',
+        filter: `post_id=eq.${post.id}`
+      }, () => {
+        checkLikeStatus();
+      })
+      .subscribe();
+
+    return () => {
+      commentsSubscription.unsubscribe();
+      likesSubscription.unsubscribe();
+    };
+  };
 
   const fetchComments = async () => {
     const { data } = await supabase
@@ -49,20 +87,29 @@ export default function PostCard({ post, currentUser, onDelete }: PostCardProps)
   };
 
   const handleLike = async () => {
-    if (liked) {
-      await supabase
-        .from('likes')
-        .delete()
-        .eq('post_id', post.id)
-        .eq('user_id', currentUser.id);
-      setLiked(false);
-      setLikeCount(prev => prev - 1);
-    } else {
-      await supabase
-        .from('likes')
-        .insert({ post_id: post.id, user_id: currentUser.id });
-      setLiked(true);
-      setLikeCount(prev => prev + 1);
+    if (isDemoMode) {
+      // Demo mode - simulate like
+      setLiked(!liked);
+      setLikeCount(prev => liked ? prev - 1 : prev + 1);
+      toast.success(liked ? 'Unliked!' : 'Liked!');
+      return;
+    }
+
+    try {
+      if (liked) {
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('post_id', post.id)
+          .eq('user_id', currentUser.id);
+      } else {
+        await supabase
+          .from('likes')
+          .insert({ post_id: post.id, user_id: currentUser.id });
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast.error('Failed to update like');
     }
   };
 
@@ -70,22 +117,40 @@ export default function PostCard({ post, currentUser, onDelete }: PostCardProps)
     e.preventDefault();
     if (!newComment.trim()) return;
 
-    setLoading(true);
-    const { error } = await supabase
-      .from('comments')
-      .insert({
+    if (isDemoMode) {
+      // Demo mode - simulate comment
+      const demoComment = {
+        id: `demo-comment-${Date.now()}`,
         post_id: post.id,
         user_id: currentUser.id,
         content: newComment.trim(),
-      });
-
-    if (error) {
-      toast.error('Failed to add comment');
-    } else {
+        created_at: new Date().toISOString(),
+        profiles: currentUser
+      };
+      setComments(prev => [...prev, demoComment]);
       setNewComment('');
-      fetchComments();
+      toast.success('Comment added! (Demo mode)');
+      return;
     }
-    setLoading(false);
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .insert({
+          post_id: post.id,
+          user_id: currentUser.id,
+          content: newComment.trim(),
+        });
+
+      if (error) throw error;
+      setNewComment('');
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast.error('Failed to add comment');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -119,6 +184,10 @@ export default function PostCard({ post, currentUser, onDelete }: PostCardProps)
             src={post.image_url}
             alt="Post"
             className="w-full h-96 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+            onError={(e) => {
+              // Fallback for broken images
+              e.currentTarget.src = 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=800';
+            }}
           />
         </div>
       )}
@@ -126,7 +195,7 @@ export default function PostCard({ post, currentUser, onDelete }: PostCardProps)
       {/* Content */}
       {post.content && (
         <div className="p-4">
-          <p className="text-gray-800">{post.content}</p>
+          <p className="text-gray-800 whitespace-pre-wrap">{post.content}</p>
         </div>
       )}
 

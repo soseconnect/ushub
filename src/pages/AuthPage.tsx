@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Heart, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { Heart, Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { supabase, isDemoMode, demoAuth } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 export default function AuthPage() {
@@ -18,6 +18,13 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      if (isDemoMode) {
+        // Demo mode - simulate authentication
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate loading
+        toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!');
+        return;
+      }
+
       if (isLogin) {
         console.log('Attempting login...');
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -87,6 +94,21 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Demo Mode Warning */}
+        {isDemoMode && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+              <div>
+                <h3 className="font-semibold text-amber-800">Demo Mode</h3>
+                <p className="text-sm text-amber-700">
+                  Connect to Supabase for full functionality
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Welcome Section */}
         <div className="text-center mb-8">
           <Heart className="w-20 h-20 text-purple-600 mx-auto mb-4" />
@@ -118,7 +140,7 @@ export default function AuthPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                required
+                required={!isDemoMode}
                 disabled={loading}
               />
             </div>
@@ -132,7 +154,7 @@ export default function AuthPage() {
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                   className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                  required
+                  required={!isDemoMode}
                   disabled={loading}
                 />
               </div>
@@ -146,7 +168,7 @@ export default function AuthPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                required
+                required={!isDemoMode}
                 minLength={6}
                 disabled={loading}
               />

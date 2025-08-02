@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MessageCircle, Users, LogOut, Heart, Wifi, WifiOff } from 'lucide-react';
-import { supabase, Post } from '../lib/supabase';
+import { Plus, MessageCircle, Users, LogOut, Heart, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { supabase, Post, isDemoMode, demoPosts } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import CreatePost from '../components/CreatePost';
 import PostCard from '../components/PostCard';
@@ -49,10 +49,16 @@ export default function HomePage() {
   const initializeData = async () => {
     setLoading(true);
     try {
-      await Promise.all([
-        fetchPosts(),
-        fetchUsers()
-      ]);
+      if (isDemoMode) {
+        // Demo mode - use demo data
+        setPosts(demoPosts);
+        setUsers([]);
+      } else {
+        await Promise.all([
+          fetchPosts(),
+          fetchUsers()
+        ]);
+      }
     } catch (error) {
       console.error('Error initializing data:', error);
     } finally {
@@ -119,6 +125,11 @@ export default function HomePage() {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                 Your Space
               </h1>
+              {isDemoMode && (
+                <span className="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">
+                  Demo
+                </span>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <button
@@ -128,7 +139,7 @@ export default function HomePage() {
                 <Plus className="w-6 h-6" />
               </button>
               
-              <NotificationCenter currentUser={profile} />
+              {!isDemoMode && <NotificationCenter currentUser={profile} />}
               
               <button
                 onClick={() => setShowChat(true)}
@@ -165,6 +176,21 @@ export default function HomePage() {
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 py-8">
+        {/* Demo Mode Notice */}
+        {isDemoMode && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-blue-600" />
+              <div>
+                <h3 className="font-semibold text-blue-800">Demo Mode Active</h3>
+                <p className="text-sm text-blue-700">
+                  Connect to Supabase to enable real-time features, image uploads, and messaging.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Welcome back, {profile.username}!
@@ -175,7 +201,7 @@ export default function HomePage() {
         </div>
 
         {/* Online Users */}
-        <OnlineUsers currentUser={profile} onUserClick={openChatWithUser} />
+        {!isDemoMode && <OnlineUsers currentUser={profile} onUserClick={openChatWithUser} />}
 
         {/* All Users List */}
         {users.length > 0 && (
@@ -234,6 +260,7 @@ export default function HomePage() {
                 key={post.id}
                 post={post}
                 currentUser={profile}
+                onPostUpdate={fetchPosts}
               />
             ))
           )}
@@ -245,7 +272,7 @@ export default function HomePage() {
         isOpen={showCreatePost}
         onClose={() => setShowCreatePost(false)}
         currentUser={profile}
-        onPostCreated={fetchPosts}
+        onPostCreated={initializeData}
       />
 
       <ChatWindow

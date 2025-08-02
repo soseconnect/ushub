@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, Profile } from '../lib/supabase';
+import { supabase, Profile, isDemoMode, demoUser, demoAuth } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 export function useAuth() {
@@ -12,7 +12,17 @@ export function useAuth() {
 
     const initAuth = async () => {
       try {
-        // Get initial session
+        if (isDemoMode) {
+          // Demo mode - simulate authentication
+          if (mounted) {
+            setUser(demoUser);
+            setProfile(demoUser);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Real Supabase mode
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -41,30 +51,36 @@ export function useAuth() {
 
     initAuth();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
+    if (!isDemoMode) {
+      // Listen for auth changes only in real mode
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (!mounted) return;
 
-        console.log('Auth state changed:', event, session?.user?.id);
+          console.log('Auth state changed:', event, session?.user?.id);
 
-        if (session?.user) {
-          setUser(session.user);
-          if (event === 'SIGNED_UP' || event === 'SIGNED_IN') {
-            await fetchProfile(session.user.id);
+          if (session?.user) {
+            setUser(session.user);
+            if (event === 'SIGNED_UP' || event === 'SIGNED_IN') {
+              await fetchProfile(session.user.id);
+            }
+          } else {
+            setUser(null);
+            setProfile(null);
           }
-        } else {
-          setUser(null);
-          setProfile(null);
+          
+          setLoading(false);
         }
-        
-        setLoading(false);
-      }
-    );
+      );
+
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+      };
+    }
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
     };
   }, []);
 
@@ -80,7 +96,6 @@ export function useAuth() {
       
       if (error) {
         console.error('Profile fetch error:', error);
-        // Don't show error toast for missing profile, it might not exist yet
         return;
       }
 
@@ -94,6 +109,14 @@ export function useAuth() {
   const signOut = async () => {
     try {
       setLoading(true);
+      
+      if (isDemoMode) {
+        setUser(null);
+        setProfile(null);
+        toast.success('Signed out successfully');
+        return;
+      }
+
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -113,6 +136,7 @@ export function useAuth() {
     profile,
     loading,
     signOut,
-    refetchProfile: () => user && fetchProfile(user.id)
+    refetchProfile: () => user && !isDemoMode && fetchProfile(user.id),
+    isDemoMode
   };
 }
