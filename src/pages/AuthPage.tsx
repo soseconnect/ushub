@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Heart, Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { supabase, isDemoMode, demoAuth } from '../lib/supabase';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { supabase, isDemoMode } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 export default function AuthPage() {
@@ -92,7 +92,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-blue-50">
       <div className="w-full max-w-md">
         {/* Demo Mode Warning */}
         {isDemoMode && (
@@ -111,7 +111,9 @@ export default function AuthPage() {
 
         {/* Welcome Section */}
         <div className="text-center mb-8">
-          <Heart className="w-20 h-20 text-purple-600 mx-auto mb-4" />
+          <div className="w-20 h-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-white text-3xl font-bold">YS</span>
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Your Private Space
           </h1>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, Profile, isDemoMode, demoUser, demoAuth } from '../lib/supabase';
+import { supabase, Profile, isDemoMode, demoUser } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
 export function useAuth() {

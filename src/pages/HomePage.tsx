@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MessageCircle, Users, LogOut, Heart, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { Plus, MessageCircle, Users, LogOut, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 import { supabase, Post, isDemoMode, demoPosts } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import CreatePost from '../components/CreatePost';
@@ -105,9 +105,11 @@ export default function HomePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50">
         <div className="text-center">
-          <Heart className="w-16 h-16 text-purple-600 mx-auto mb-4 animate-pulse" />
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <span className="text-white text-2xl font-bold">YS</span>
+          </div>
           <p className="text-gray-600">Loading your profile...</p>
         </div>
       </div>
@@ -115,13 +117,15 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <Heart className="w-8 h-8 text-purple-600" />
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">YS</span>
+              </div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                 Your Space
               </h1>
@@ -240,7 +244,9 @@ export default function HomePage() {
             </div>
           ) : posts.length === 0 ? (
             <div className="text-center py-12">
-              <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white text-2xl font-bold">YS</span>
+              </div>
               <h3 className="text-xl font-semibold text-gray-600 mb-2">
                 No posts yet
               </h3>
